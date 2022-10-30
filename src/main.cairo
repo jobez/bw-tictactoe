@@ -188,6 +188,39 @@ func enforce_permissable_move(role: felt, game: Game) {
     return ();
 }
 
+func handle_end_game{ syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(game_ended : felt, game : Game) {
+    if (game_ended == 1) {
+       player_to_game_idx.write(game.player_x, 0);
+       player_to_game_idx.write(game.player_o, 0);
+       tempvar syscall_ptr=syscall_ptr;
+       tempvar pedersen_ptr=pedersen_ptr;
+       tempvar range_check_ptr=range_check_ptr;    
+    
+    } else {
+    tempvar syscall_ptr=syscall_ptr;
+    tempvar pedersen_ptr=pedersen_ptr;
+    tempvar range_check_ptr=range_check_ptr;
+
+    } 
+
+    
+    return ();
+}
+
+func update_game{bitwise_ptr: BitwiseBuiltin*}(role : felt, prior_game : Game, new_move :felt) -> (new_game: Game, end_game: felt) {
+    if (role == PLAYER_X) {
+       let winning_move = check_winner(prior_game.state_x); 
+       let maybe_won = winning_move * role; 
+       let new_game = Game(prior_game.player_x, prior_game.player_o, new_move, prior_game.state_o, PLAYER_X, maybe_won);
+       return (new_game=new_game, end_game=winning_move);
+    } else {
+       let winning_move = check_winner(prior_game.state_o); 
+       let maybe_won = winning_move * role;
+       let new_game = Game(prior_game.player_x, prior_game.player_o, prior_game.state_x, new_move, PLAYER_O, maybe_won);
+       return (new_game=new_game, end_game=winning_move);
+    }
+
+}
 
 @external
 func make_move{syscall_ptr : felt*, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*, range_check_ptr}(game_idx: felt, updated_game_state : felt) {
@@ -196,20 +229,16 @@ func make_move{syscall_ptr : felt*, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr :
    assert_not_zero(address);     
    let game : Game = game_state.read(game_idx); 
    let role : felt = derive_address_role(game, address);
-   enforce_permissable_move(role, game);
+   
+    
+    enforce_permissable_move(role, game);
 
-    if (role == PLAYER_X) {
-       let winning_move = check_winner(game.state_x); 
-       let maybe_won = winning_move * role;        
-       let updated_game = Game(game.player_x, game.player_o, updated_game_state, game.state_o, PLAYER_X, maybe_won);
-        game_state.write(game_idx, updated_game);    
-    } else {
-       let winning_move = check_winner(game.state_o); 
-       let maybe_won = winning_move * role;
-       let updated_game = Game(game.player_x, game.player_o, game.state_x, updated_game_state, PLAYER_O, maybe_won);
-        game_state.write(game_idx, updated_game);    
-    }
+    let (new_game : Game, game_over : felt) = update_game(role, game, updated_game_state);
 
+    game_state.write(game_idx, new_game);   
+    
+    handle_end_game(game_over, new_game);
+    
 
     return ();
 

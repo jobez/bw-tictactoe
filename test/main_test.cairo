@@ -44,7 +44,37 @@ func test_main2{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin
 
     assert updated_game.player_o = 124;
     assert updated_game.state_o = 1;
+    %{ expect_revert(error_message="not your turn") %}
+    make_move(game_idx, 3);
 
     %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(123) %}
+    make_move(game_idx, 7);
+
+    let updated_game : Game = game_id_to_game(game_idx);
+    assert updated_game.winner = 1;
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(124) %}
+    %{ expect_revert(error_message="game over") %}
+    make_move(game_idx, 7);
+    %{ stop_prank_callable() %}
+
+
+    %{ stop_prank_callable() %}
+
+    // now we check that upon finishing both players can start their own games
+
+    %{ stop_prank_callable = start_prank(123) %}
+    init_new_game();    
+    %{ stop_prank_callable() %}
+
+
+    %{ stop_prank_callable = start_prank(124) %}
+    init_new_game();    
+    %{ stop_prank_callable() %}
+
     return ();
 }
