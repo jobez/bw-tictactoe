@@ -5,7 +5,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.bitwise import bitwise_and, bitwise_xor
 from starkware.cairo.common.math_cmp import is_not_zero
 from starkware.cairo.common.pow import pow
-from starkware.cairo.common.math import unsigned_div_rem
+from starkware.cairo.common.math import unsigned_div_rem, assert_not_zero
 from starkware.cairo.common.alloc import alloc
 
 
@@ -99,11 +99,26 @@ func game_count() -> (gc: felt) {
 func game_state(idx: felt) -> (res: Game) {
 }    
 
+@view 
+func player_to_game_id{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(address: felt) -> (game_idx: felt) {
+   let game_idx : felt = player_to_game_idx.read(address);
+   return (game_idx=game_idx); 
+    
+}
+
+@view 
+func game_id_to_game{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(game_idx : felt) -> (game: Game) {
+    let game : Game = game_state.read(game_idx);
+    return (game=game);
+}
 
 @external
 func init_new_game{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() {
    let address : felt = get_caller_address();     
    let game_idx : felt = game_count.read();
+
+   assert_not_zero(address);     
+    
    let potential_game_idx : felt = player_to_game_idx.read(address);
  
    with_attr error_message ("a player can only have one active game") {
@@ -114,7 +129,66 @@ func init_new_game{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check
    let new_game : Game = Game(address, 0, 0, 0, 0);
     
    game_state.write(game_idx, new_game);
+   player_to_game_idx.write(address, game_idx); 
    game_count.write(game_idx+1); 
 
    return (); 
+}
+
+@external
+func join_game{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(game_idx: felt){
+   let address : felt = get_caller_address();
+   let game : Game = game_state.read(game_idx);
+   with_attr error_message ("a game must exist to join") {
+       assert_not_zero(game.player_x);
+   }
+
+   with_attr error_message ("a spot must be available to join") {
+       assert game.player_o = 0;
+   }
+
+   let joined_game : Game = Game(game.player_x, address, game.state_x, game.state_o, game.completed);
+   game_state.write(game_idx, joined_game); 
+
+   return (); 
+}
+
+func derive_address_role(game : Game, address : felt) -> felt {
+    if (address == game.player_x) {
+        return (1);
+    
+    }
+
+    if (address == game.player_o) {
+        return (0);
+        
+    }
+
+   with_attr error_message ("this player is not registered in this game") {
+        assert 1 = 0;
+   }    
+   
+   return (0); 
+
+}
+
+@external
+func make_move{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(game_idx: felt, updated_game_state : felt) {
+   alloc_locals;
+   let address : felt = get_caller_address();     
+   assert_not_zero(address);     
+   let game : Game = game_state.read(game_idx); 
+   let role : felt = derive_address_role(game, address);
+
+    if (role == 1) {
+       let updated_game = Game(game.player_x, game.player_o, updated_game_state, game.state_o, game.completed);
+        game_state.write(game_idx, updated_game);    
+    } else {
+       let updated_game = Game(game.player_x, game.player_o, game.state_x, updated_game_state,  game.completed);
+        game_state.write(game_idx, updated_game);    
+    }
+
+
+    return ();
+
 }
