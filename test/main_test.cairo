@@ -25,7 +25,7 @@ func test_main2{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin
     make_move(game_idx, 33);
     let updated_game : Game = game_id_to_game(game_idx);
    
-    %{ print(f"{ids.updated_game.player_x=} {ids.updated_game.state_x=}") 
+    %{ print(f"{ids.updated_game.player_x=} {ids.updated_game.state_x=} {ids.updated_game.last_mover=}") 
     %}
     
     assert updated_game.player_x = 123;
@@ -39,7 +39,7 @@ func test_main2{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin
     let updated_game : Game = game_id_to_game(game_idx);
    
 
-   %{ print(f"{ids.updated_game.player_o=} {ids.updated_game.state_o=}") 
+   %{ print(f"{ids.updated_game.player_o=} {ids.updated_game.state_o=} {ids.updated_game.last_mover=}") 
     %}
 
     assert updated_game.player_o = 124;
