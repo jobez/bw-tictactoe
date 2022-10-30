@@ -1,5 +1,5 @@
 %lang starknet
-from src.main import check_winner
+from src.main import check_winner, init_new_game
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 
 @external
@@ -13,6 +13,15 @@ func test_main{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
     %{ print(f"{ids.check_two=}") 
     %}
     
+
+    return ();
+}
+
+@external
+func test_main2{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
+   // value to pass
+
+    init_new_game();    
 
     return ();
 }

@@ -1,5 +1,6 @@
 %lang starknet
 
+from starkware.starknet.common.syscalls import get_contract_address, get_caller_address
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.bitwise import bitwise_and, bitwise_xor
 from starkware.cairo.common.math_cmp import is_not_zero
@@ -55,14 +56,22 @@ func check_winner{bitwise_ptr: BitwiseBuiltin*}(state: felt) -> felt {
     alloc_locals;
     let winners: felt* = alloc();
 
-    assert winners[0] = 448;
+    assert winners[0] = 448; 
+    // 111 000 000
     assert winners[1] = 56;
+    // 000 111 000
     assert winners[2] = 7;
+    // 000 000 111
     assert winners[3] = 292;
+    // 100 100 100
     assert winners[4] = 146;
+    // 010 010 010
     assert winners[5] = 73;
+    // 001 001 001
     assert winners[6] = 273;
+    // 100 010 001
     assert winners[7] = 84;
+    // 001010100
 
     let res : felt = _check_winner(state=state, idx=7, winners=winners);
     return (res);
@@ -70,11 +79,20 @@ func check_winner{bitwise_ptr: BitwiseBuiltin*}(state: felt) -> felt {
 }
 
 struct Game {
-    player_one: felt,
-    player_two: felt,
+    player_x: felt,
+    player_o: felt,
     state_x: felt,
     state_o: felt,
     completed: felt,
+}
+
+
+@storage_var 
+func player_to_game_idx(player: felt) -> (game_idx: felt) {
+}
+
+@storage_var
+func game_count() -> (gc: felt) {
 }
 
 @storage_var
@@ -82,3 +100,21 @@ func game_state(idx: felt) -> (res: Game) {
 }    
 
 
+@external
+func init_new_game{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() {
+   let address : felt = get_caller_address();     
+   let game_idx : felt = game_count.read();
+   let potential_game_idx : felt = player_to_game_idx.read(address);
+ 
+   with_attr error_message ("a player can only have one active game") {
+        assert potential_game_idx = 0;
+   }
+
+ %{ print(f"passing value: {ids.address=} {ids.game_idx=} ") %}
+   let new_game : Game = Game(address, 0, 0, 0, 0);
+    
+   game_state.write(game_idx, new_game);
+   game_count.write(game_idx+1); 
+
+   return (); 
+}
