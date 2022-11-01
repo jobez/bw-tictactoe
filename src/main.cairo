@@ -146,12 +146,17 @@ func join_game{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
        assert_not_zero(game.player_x);
    }
 
+    with_attr error_message ("you cannot join the same game") {
+       assert_not_equal(game.player_x, address);
+   }
+
    with_attr error_message ("a spot must be available to join") {
        assert game.player_o = 0;
    }
 
    let joined_game : Game = Game(game.player_x, address, game.state_x, game.state_o, game.last_mover, game.winner);
    game_state.write(game_idx, joined_game); 
+  player_to_game_idx.write(address, game_idx);
 
    return (); 
 }
