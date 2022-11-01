@@ -131,9 +131,9 @@ func init_new_game{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check
  %{ print(f"passing value: {ids.address=} {ids.game_idx=} ") %}
    let new_game : Game = Game(address, 0, 0, 0, 0, 0);
     
-   game_state.write(game_idx, new_game);
-   player_to_game_idx.write(address, game_idx); 
-   game_count.write(game_idx+1); 
+   game_state.write(game_idx+1, new_game);
+   player_to_game_idx.write(address, game_idx+1); 
+   game_count.write(game_idx+2); 
 
    return (); 
 }
