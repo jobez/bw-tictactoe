@@ -214,12 +214,12 @@ func handle_end_game{ syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
 
 func update_game{bitwise_ptr: BitwiseBuiltin*}(role : felt, prior_game : Game, new_move :felt) -> (new_game: Game, end_game: felt) {
     if (role == PLAYER_X) {
-       let winning_move = check_winner(prior_game.state_x); 
+       let winning_move = check_winner(new_move); 
        let maybe_won = winning_move * role; 
        let new_game = Game(prior_game.player_x, prior_game.player_o, new_move, prior_game.state_o, PLAYER_X, maybe_won);
        return (new_game=new_game, end_game=winning_move);
     } else {
-       let winning_move = check_winner(prior_game.state_o); 
+       let winning_move = check_winner(new_move); 
        let maybe_won = winning_move * role;
        let new_game = Game(prior_game.player_x, prior_game.player_o, prior_game.state_x, new_move, PLAYER_O, maybe_won);
        return (new_game=new_game, end_game=winning_move);
