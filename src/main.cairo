@@ -11,6 +11,14 @@ from starkware.cairo.common.alloc import alloc
 const PLAYER_X = 1;
 const PLAYER_O = 2;
 
+@event
+func game_over(
+    game_id: felt,
+    role: felt,
+    winner: felt
+) {
+}
+    
 func get_nth_bit{bitwise_ptr : BitwiseBuiltin*, range_check_ptr : felt}(value, n) -> felt {
    let (pow2n) = pow(2, n);
    let (and_val) = bitwise_and(value, pow2n);
@@ -193,10 +201,11 @@ func enforce_permissable_move(role: felt, game: Game) {
     return ();
 }
 
-func handle_end_game{ syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(game_ended : felt, game : Game) {
+func handle_end_game{ syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(game_ended : felt, maybe_winner : felt, maybe_winner_role : felt, game_id : felt, game : Game) {
     if (game_ended == 1) {
        player_to_game_idx.write(game.player_x, 0);
        player_to_game_idx.write(game.player_o, 0);
+       game_over.emit(game_id=game_id, role=maybe_winner_role, winner=maybe_winner);
        tempvar syscall_ptr=syscall_ptr;
        tempvar pedersen_ptr=pedersen_ptr;
        tempvar range_check_ptr=range_check_ptr;    
@@ -242,7 +251,7 @@ func make_move{syscall_ptr : felt*, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr :
 
     game_state.write(game_idx, new_game);   
     
-    handle_end_game(game_over, new_game);
+    handle_end_game(game_over, address, role, game_idx, new_game);
     
 
     return ();
