@@ -11,6 +11,15 @@ from starkware.cairo.common.alloc import alloc
 const PLAYER_X = 1;
 const PLAYER_O = 2;
 
+struct Game {
+    player_x: felt,
+    player_o: felt,
+    state_x: felt,
+    state_o: felt,
+    last_mover: felt,
+    winner: felt,
+}
+
 @event
 func game_over(
     game_id: felt,
@@ -88,14 +97,6 @@ func check_winner{bitwise_ptr: BitwiseBuiltin*}(state: felt) -> felt {
 
 }
 
-struct Game {
-    player_x: felt,
-    player_o: felt,
-    state_x: felt,
-    state_o: felt,
-    last_mover: felt,
-    winner: felt,
-}
 
 
 @storage_var 
@@ -202,18 +203,18 @@ func enforce_permissable_move(role: felt, game: Game) {
 }
 
 func handle_end_game{ syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(game_ended : felt, maybe_winner : felt, maybe_winner_role : felt, game_id : felt, game : Game) {
-    if (game_ended == 1) {
+    if (game_ended == 0) {
+       tempvar syscall_ptr=syscall_ptr;
+       tempvar pedersen_ptr=pedersen_ptr;
+       tempvar range_check_ptr=range_check_ptr;
+    } else {
        player_to_game_idx.write(game.player_x, 0);
        player_to_game_idx.write(game.player_o, 0);
        game_over.emit(game_id=game_id, role=maybe_winner_role, winner=maybe_winner);
        tempvar syscall_ptr=syscall_ptr;
        tempvar pedersen_ptr=pedersen_ptr;
        tempvar range_check_ptr=range_check_ptr;    
-    
-    } else {
-    tempvar syscall_ptr=syscall_ptr;
-    tempvar pedersen_ptr=pedersen_ptr;
-    tempvar range_check_ptr=range_check_ptr;
+       
 
     } 
 
