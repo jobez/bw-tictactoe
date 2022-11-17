@@ -202,6 +202,109 @@ func enforce_permissable_move(role: felt, game: Game) {
     return ();
 }
 
+
+func is_pow_of_two{bitwise_ptr: BitwiseBuiltin*}(number: felt) -> (bool : felt) {
+
+    let number_minus_one = number - 1;
+    let (pow_two_check) = bitwise_and(number, number_minus_one);
+
+    if (pow_two_check == 0) {
+        return (bool=1);
+    } else {
+    
+        return (bool=0);
+    
+    }
+
+}
+
+func log2{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(number: felt, current : felt, log: felt) -> (final_log : felt) {
+
+    if (current == 0) {
+    
+        return (final_log=log);
+        
+    } 
+
+    let is_this_pow_of_two : felt = get_nth_bit(number, current-1);
+
+    if (is_this_pow_of_two == 1) {
+
+        return (final_log=current);
+    
+    }
+
+    let (new_log) = log2(number, current-1, log);
+    
+    return (final_log=new_log);
+}
+
+
+func validate_move{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(possible_move : felt, opposing_board_state : felt) {
+        let valid_possible_move : felt = is_pow_of_two(possible_move);
+    
+        with_attr error_message ("not a valid discrete move from prior board state") {
+            // is the delta only one move forward?
+            // for role, is possible_state - role_board_state a power of two?, is so, which power?
+
+            assert valid_possible_move = 1;
+        }    
+
+        // for role, is possible_state - role_board_state a power of two?, is so, which power?
+        let (move_on_board) = log2(possible_move, 9, -1);
+
+        with_attr error_message ("move is not on the board") {
+            // is the delta only one move forward?
+            // for role, is possible_state - role_board_state a power of two?, is so, which power?
+
+           assert_not_equal(move_on_board, -1);
+        }
+
+        // did the other player already make a move in that spot?
+        let move_is_taken : felt = get_nth_bit(opposing_board_state, move_on_board);
+
+        with_attr error_message ("move is not on the board") {
+            // is the delta only one move forward?
+            // for role, is possible_state - role_board_state a power of two?, is so, which power?
+
+           assert_not_equal(move_is_taken, 1);
+        }
+
+    return ();
+}
+
+
+func validate_moves{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(role: felt, o_board_state : felt, x_board_state : felt, possible_state : felt) {
+ 
+    alloc_locals;
+    
+   if (role == PLAYER_X) {
+        let possible_move : felt = possible_state - x_board_state;
+        validate_move(possible_move, o_board_state);
+        tempvar bitwise_ptr=bitwise_ptr;
+        tempvar range_check_ptr=range_check_ptr;
+        
+
+    
+    } else {
+       let possible_move : felt = possible_state - o_board_state;
+       validate_move(possible_move, x_board_state);
+       tempvar bitwise_ptr=bitwise_ptr;
+       tempvar range_check_ptr=range_check_ptr;
+    }
+
+    tempvar bitwise_ptr=bitwise_ptr;
+    tempvar range_check_ptr=range_check_ptr;
+
+
+    // is the one move forward attempting to be made already 'occupied'?
+    // if the move is a valid power of two, take the power and see if it exists in other_role_board_state
+    // if not, we gucci
+
+    return ();
+
+}
+
 func handle_end_game{ syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(game_ended : felt, maybe_winner : felt, maybe_winner_role : felt, game_id : felt, game : Game) {
     if (game_ended == 0) {
        tempvar syscall_ptr=syscall_ptr;
@@ -222,7 +325,9 @@ func handle_end_game{ syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
     return ();
 }
 
-func update_game{bitwise_ptr: BitwiseBuiltin*}(role : felt, prior_game : Game, new_move :felt) -> (new_game: Game, end_game: felt) {
+func update_game{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(role : felt, prior_game : Game, new_move :felt) -> (new_game: Game, end_game: felt) {
+    alloc_locals;
+    validate_moves(role, prior_game.state_o, prior_game.state_x, new_move);
     if (role == PLAYER_X) {
        let winning_move = check_winner(new_move); 
        let maybe_won = winning_move * role; 
