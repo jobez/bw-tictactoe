@@ -3,7 +3,7 @@
 from starkware.starknet.common.syscalls import get_contract_address, get_caller_address
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.bitwise import bitwise_and, bitwise_xor
-from starkware.cairo.common.math_cmp import is_not_zero
+from starkware.cairo.common.math_cmp import is_not_zero, is_le_felt
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import unsigned_div_rem, assert_not_zero, assert_not_equal
 from starkware.cairo.common.alloc import alloc
@@ -31,8 +31,14 @@ func game_over(
 func get_nth_bit{bitwise_ptr : BitwiseBuiltin*, range_check_ptr : felt}(value, n) -> felt {
    let (pow2n) = pow(2, n);
    let (and_val) = bitwise_and(value, pow2n);
-   let res = is_not_zero(and_val);
-   return (res);
+    if (and_val == pow2n) {
+        return (1);
+    } else {
+        return (0);
+    }
+
+    
+
 }
 
 func jhnn_flip(n : felt) -> felt {
@@ -57,7 +63,7 @@ func _check_winner{bitwise_ptr: BitwiseBuiltin*}(state: felt, idx: felt, winners
     
     let win_check : felt = bitwise_and(state, win_state);
 
-    %{ print(f"passing value: {ids.state=} {ids.win_state=} {ids.win_check=}") %}
+//   %{ print(f"passing value: {ids.state=} {ids.win_state=} {ids.win_check=}") %}
     if (win_check == win_state) {
        return 1; 
     }
@@ -230,7 +236,7 @@ func log2{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(number: felt, current :
 
     if (is_this_pow_of_two == 1) {
 
-        return (final_log=current);
+        return (final_log=current-1);
     
     }
 
@@ -241,6 +247,11 @@ func log2{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(number: felt, current :
 
 
 func validate_move{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(possible_move : felt, opposing_board_state : felt) {
+        alloc_locals;
+        with_attr error_message ("board state must change") {
+           assert_not_zero(possible_move); 
+        }
+
         let valid_possible_move : felt = is_pow_of_two(possible_move);
     
         with_attr error_message ("not a valid discrete move from prior board state") {
@@ -251,7 +262,7 @@ func validate_move{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(possible_move 
         }    
 
         // for role, is possible_state - role_board_state a power of two?, is so, which power?
-        let (move_on_board) = log2(possible_move, 9, -1);
+        let (local move_on_board) = log2(possible_move, 8, -1);
 
         with_attr error_message ("move is not on the board") {
             // is the delta only one move forward?
@@ -262,8 +273,9 @@ func validate_move{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(possible_move 
 
         // did the other player already make a move in that spot?
         let move_is_taken : felt = get_nth_bit(opposing_board_state, move_on_board);
+       %{ print(f"move check: {ids.possible_move=} {ids.move_on_board=} {ids.opposing_board_state=} {ids.move_is_taken=} ") %}
 
-        with_attr error_message ("move is not on the board") {
+        with_attr error_message ("move is already taken by opposition") {
             // is the delta only one move forward?
             // for role, is possible_state - role_board_state a power of two?, is so, which power?
 

@@ -22,14 +22,14 @@ func test_main2{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin
     alloc_locals;
     init_new_game();    
     let game_idx : felt = player_to_game_id(123);
-    make_move(game_idx, 33);
+    make_move(game_idx, 1);
     let updated_game : Game = game_id_to_game(game_idx);
    
     %{ print(f"{ids.updated_game.player_x=} {ids.updated_game.state_x=} {ids.updated_game.last_mover=}") 
     %}
     
     assert updated_game.player_x = 123;
-    assert updated_game.state_x = 33;
+    assert updated_game.state_x = 1;
 
     %{ stop_prank_callable() %}
 
@@ -50,10 +50,10 @@ func test_main2{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin
     %{ stop_prank_callable() %}
 
     %{ stop_prank_callable = start_prank(123) %}
-    make_move(game_idx, 7);
+    make_move(game_idx, 2);
 
     let updated_game : Game = game_id_to_game(game_idx);
-    assert updated_game.winner = 1;
+    assert updated_game.winner = 2;
 
     %{ stop_prank_callable() %}
 
@@ -78,3 +78,141 @@ func test_main2{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin
 
     return ();
 }
+
+@external
+func test_move_validation_must_be_within_bounds_of_board{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
+   // value to pass
+    %{ stop_prank_callable = start_prank(123) %}
+    alloc_locals;
+    init_new_game();    
+    let game_idx : felt = player_to_game_id(123);
+    make_move(game_idx, 1);
+    let updated_game : Game = game_id_to_game(game_idx);
+   
+  
+    assert updated_game.player_x = 123;
+    assert updated_game.state_x = 1;
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(124) %}
+
+    join_game(game_idx);
+    make_move(game_idx, 2);
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(123) %}
+
+
+
+    %{ expect_revert(error_message="move is not on the board") %}
+    make_move(game_idx, 513);
+    %{ stop_prank_callable() %}
+
+
+
+    return ();
+}
+
+@external
+func test_move_validation_board_state_must_change{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
+   // value to pass
+    %{ stop_prank_callable = start_prank(123) %}
+    alloc_locals;
+    init_new_game();    
+    let game_idx : felt = player_to_game_id(123);
+    make_move(game_idx, 1);
+    let updated_game : Game = game_id_to_game(game_idx);
+   
+  
+    assert updated_game.player_x = 123;
+    assert updated_game.state_x = 1;
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(124) %}
+
+    join_game(game_idx);
+    make_move(game_idx, 2);
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(123) %}
+
+
+
+    %{ expect_revert(error_message="board state unchanged") %}
+    make_move(game_idx, 1);
+    %{ stop_prank_callable() %}
+
+
+
+    return ();
+}
+
+
+@external
+func test_move_validation_more_than_one_move_at_once{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
+   // value to pass
+    %{ stop_prank_callable = start_prank(123) %}
+    alloc_locals;
+    init_new_game();    
+    let game_idx : felt = player_to_game_id(123);
+    make_move(game_idx, 1);
+    let updated_game : Game = game_id_to_game(game_idx);
+   
+  
+    assert updated_game.player_x = 123;
+    assert updated_game.state_x = 1;
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(124) %}
+
+    join_game(game_idx);
+    make_move(game_idx, 2);
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(123) %}
+
+
+
+    %{ expect_revert(error_message="not a valid discrete move from prior board state") %}
+     make_move(game_idx, 7);
+    %{ stop_prank_callable() %}
+
+
+
+    return ();
+}
+
+@external
+func test_move_validation_move_already_taken_by_opposition{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
+   // value to pass
+    %{ stop_prank_callable = start_prank(123) %}
+    alloc_locals;
+    init_new_game();    
+    let game_idx : felt = player_to_game_id(123);
+    make_move(game_idx, 1);
+    let updated_game : Game = game_id_to_game(game_idx);
+   
+  
+    assert updated_game.player_x = 123;
+    assert updated_game.state_x = 1;
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(124) %}
+
+    %{ expect_revert(error_message="move is already taken by opposition") %}
+    join_game(game_idx);
+    make_move(game_idx, 1);
+    %{ stop_prank_callable() %}
+
+
+
+    return ();
+}
+
