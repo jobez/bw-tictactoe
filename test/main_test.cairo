@@ -153,7 +153,7 @@ func test_move_validation_board_state_must_change{syscall_ptr: felt*, range_chec
 
 
 @external
-func test_move_validation_more_than_one_move_at_once{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
+func test_move_validation_deny_more_than_one_move_at_once{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
    // value to pass
     %{ stop_prank_callable = start_prank(123) %}
     alloc_locals;

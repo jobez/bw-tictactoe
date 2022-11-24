@@ -27,6 +27,18 @@ func game_over(
     winner: felt
 ) {
 }
+
+@storage_var 
+func player_to_game_idx(player: felt) -> (game_idx: felt) {
+}
+
+@storage_var
+func game_count() -> (gc: felt) {
+}
+
+@storage_var
+func game_state(idx: felt) -> (res: Game) {
+}    
     
 func get_nth_bit{bitwise_ptr : BitwiseBuiltin*, range_check_ptr : felt}(value, n) -> felt {
    let (pow2n) = pow(2, n);
@@ -38,11 +50,6 @@ func get_nth_bit{bitwise_ptr : BitwiseBuiltin*, range_check_ptr : felt}(value, n
     }
 
     
-
-}
-
-func jhnn_flip(n : felt) -> felt {
-   return (1 - n);
 
 }
 
@@ -102,20 +109,6 @@ func check_winner{bitwise_ptr: BitwiseBuiltin*}(state: felt) -> felt {
     return (res);
 
 }
-
-
-
-@storage_var 
-func player_to_game_idx(player: felt) -> (game_idx: felt) {
-}
-
-@storage_var
-func game_count() -> (gc: felt) {
-}
-
-@storage_var
-func game_state(idx: felt) -> (res: Game) {
-}    
 
 @view 
 func player_to_game_id{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(address: felt) -> (game_idx: felt) {
