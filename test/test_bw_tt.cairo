@@ -151,6 +151,43 @@ func test_move_validation_board_state_must_change{syscall_ptr: felt*, range_chec
     return ();
 }
 
+@external
+func test_move_validation_board_state_must_succeed_prior_state{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
+   // value to pass
+    %{ stop_prank_callable = start_prank(123) %}
+    alloc_locals;
+    init_new_game();    
+    let game_idx : felt = player_to_game_id(123);
+    make_move(game_idx, 1);
+    let updated_game : Game = game_id_to_game(game_idx);
+   
+  
+    assert updated_game.player_x = 123;
+    assert updated_game.state_x = 1;
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(124) %}
+
+    join_game(game_idx);
+    make_move(game_idx, 2);
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(123) %}
+
+
+
+   %{ expect_revert(error_message="board state must succeed prior state") %}
+    make_move(game_idx, 0);
+    %{ stop_prank_callable() %}
+
+
+
+    return ();
+}
+
+
 
 @external
 func test_move_validation_deny_more_than_one_move_at_once{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
@@ -215,4 +252,41 @@ func test_move_validation_move_already_taken_by_opposition{syscall_ptr: felt*, r
 
     return ();
 }
+
+@external
+func test_move_validation_board_state_must_not_allow_same_move{syscall_ptr: felt*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*, pedersen_ptr : HashBuiltin*}() {
+   // value to pass
+    %{ stop_prank_callable = start_prank(123) %}
+    alloc_locals;
+    init_new_game();    
+    let game_idx : felt = player_to_game_id(123);
+    make_move(game_idx, 4);
+    let updated_game : Game = game_id_to_game(game_idx);
+   
+  
+    assert updated_game.player_x = 123;
+    assert updated_game.state_x = 4;
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(124) %}
+
+    join_game(game_idx);
+    make_move(game_idx, 2);
+
+    %{ stop_prank_callable() %}
+
+    %{ stop_prank_callable = start_prank(123) %}
+
+
+
+   %{ expect_revert(error_message="move is already made by yourself") %}
+    make_move(game_idx, 8);
+    %{ stop_prank_callable() %}
+
+
+
+    return ();
+}
+
 

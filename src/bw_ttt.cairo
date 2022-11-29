@@ -3,7 +3,7 @@
 from starkware.starknet.common.syscalls import get_contract_address, get_caller_address
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.bitwise import bitwise_and, bitwise_xor
-from starkware.cairo.common.math_cmp import is_not_zero, is_le_felt
+from starkware.cairo.common.math_cmp import is_not_zero, is_le_felt, is_nn
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math import unsigned_div_rem, assert_not_zero, assert_not_equal
 from starkware.cairo.common.alloc import alloc
@@ -239,8 +239,14 @@ func log2{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(number: felt, current :
 }
 
 
-func validate_move{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(possible_move : felt, opposing_board_state : felt) {
+func validate_move{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(possible_move : felt, opposing_board_state : felt, prior_board_state: felt) {
         alloc_locals;
+        let possible_move_is_not_negative = is_nn(possible_move);
+
+        with_attr error_message ("board state must succeed prior state") {
+            assert possible_move_is_not_negative = 1;
+        }
+
         with_attr error_message ("board state must change") {
            assert_not_zero(possible_move); 
         }
@@ -275,6 +281,16 @@ func validate_move{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(possible_move 
            assert_not_equal(move_is_taken, 1);
         }
 
+        // did the current player already make a move in that spot?
+        let prior_move_is_taken : felt = get_nth_bit(prior_board_state, move_on_board);
+
+        with_attr error_message ("move is already made by yourself") {
+            // is the delta only one move forward?
+            // for role, is possible_state - role_board_state a power of two?, is so, which power?
+
+           assert_not_equal(prior_move_is_taken, 1);
+        }
+
     return ();
 }
 
@@ -285,7 +301,7 @@ func validate_moves{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(role: felt, o
     
    if (role == PLAYER_X) {
         let possible_move : felt = possible_state - x_board_state;
-        validate_move(possible_move, o_board_state);
+        validate_move(possible_move, o_board_state, x_board_state);
         tempvar bitwise_ptr=bitwise_ptr;
         tempvar range_check_ptr=range_check_ptr;
         
@@ -293,7 +309,7 @@ func validate_moves{bitwise_ptr: BitwiseBuiltin*, range_check_ptr}(role: felt, o
     
     } else {
        let possible_move : felt = possible_state - o_board_state;
-       validate_move(possible_move, x_board_state);
+       validate_move(possible_move, x_board_state, o_board_state);
        tempvar bitwise_ptr=bitwise_ptr;
        tempvar range_check_ptr=range_check_ptr;
     }
